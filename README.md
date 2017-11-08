@@ -1,0 +1,1 @@
+# coolstore-microservices-ansible
