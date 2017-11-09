@@ -1,0 +1,68 @@
+---
+- name: Get Nexus template
+  get_url:
+    url: "https://raw.githubusercontent.com/OpenShiftDemos/nexus/master/nexus2-persistent-template.yaml"
+    dest: "/tmp/nexus2-persistent-template.yaml"
+    mode: 0400
+# The oc library is not idempotent - delete resources
+- name: Remove Nexus template
+  oc_obj:
+    namespace: "{{ project_name }}"
+    kind: template
+    name: "nexus2-persistent"
+    state: absent
+    kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
+
+- name: Remove Nexus deployment
+  oc_obj:
+    namespace: "{{ project_name }}"
+    kind: "is,dc,rc,route,svc"
+    selector: "app=nexus"
+    state: absent
+    kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
+
+- name: Wait for Nexus undeployment
+  oc_obj:
+    namespace: "{{ project_name }}"
+    kind: "pod"
+    selector: "deploymentconfig=nexus"
+    state: list
+    kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
+  register: nexus_undeploy
+  until:
+  - "'results' in nexus_undeploy.results and nexus_undeploy.results.results[0]['items'] | count == 0"
+  delay: 5
+  retries: 5
+
+- name: Create Nexus template
+  oc_obj:
+    namespace: "{{ project_name }}"
+    kind: template
+    name: "nexus2-persistent"
+    state: present
+    kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
+    files:
+    - "/tmp/nexus2-persistent-template.yaml"
+
+- name: Deploy Nexus
+  oc_process:
+    namespace: "{{ project_name }}"
+    template_name: "nexus2-persistent"
+    create: true
+    kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
+
+- name: Verify Nexus deployment
+  oc_obj:
+    namespace: "{{ project_name }}"
+    kind: pod
+    selector: "deploymentconfig=nexus"
+    state: list
+    kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
+  register: nexus_deploy
+  until:
+  - "'results' in nexus_deploy.results and nexus_deploy.results.results[0]['items'] | count > 0"
+  - "{{nexus_deploy.results.results[0] | json_query(jp_query) | count == 1}}"
+  delay: 20
+  retries: 6
+  vars:
+    jp_query: "items[*].status.conditions[?type=='Ready'&&status=='True']"

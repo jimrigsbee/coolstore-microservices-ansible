@@ -1,0 +1,14 @@
+---
+openshift: 192.168.99.100:8443
+openshift_version: 3.6
+domain: 192.168.99.100.nip.io
+# Your OpenShift credentials
+username: developer
+password: developer
+# Administrative credentials
+admin_username: system:admin
+admin_password: "''"
+
+project_name: coolstore
+# Use local nexus repository
+nexus: true

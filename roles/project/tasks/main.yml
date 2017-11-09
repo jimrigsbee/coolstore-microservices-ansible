@@ -1,0 +1,8 @@
+---
+- name: Create CoolStore OpenShift project
+  oc_project:
+    display_name: "{{ project_display_name }}"
+    name: "{{ project_name }}"
+    state: present
+    description: "{{ project_desc }}"
+    kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
