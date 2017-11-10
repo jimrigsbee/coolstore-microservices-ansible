@@ -8,8 +8,8 @@ Make sure you have the following requirements installed:
 - Git
 - Ansible 1.9+
 - Python module "jmespath"
-  - sudo pip install jmespath *or* sudo yum install python-jmespath
-  - This is required for the json_query filter in Ansible
+  * sudo pip install jmespath *or* sudo yum install python-jmespath
+  * This is required for the json_query filter in Ansible
 
 ## Application Installation
 All of the instructions in this section assume that you are using CDK 3.2 (minishift). You may use a remote OpenShift cluster as well.  Adjust IP addresses and ports as needed.
@@ -32,6 +32,16 @@ Choose from one of the following playbooks:
 |===
 
 ```
-$ ansible-playbook -i hosts playbooks/msa.yml
+$ ansible-playbook -i hosts --tags "deploy" playbooks/msa.yml
 ```
 Substitute the desired playbook in the command above.
+
+Permissions were given to the *developer* user so you can work with the application with that account.
+
+## Application De-Installation
+
+* Login to your openshift environment as the system administrator.
+* Run the appropriate playbook with the *undeploy* tag
+```
+$ ansible-playbook -i hosts --tags "undeploy" playbooks/msa.yml
+```

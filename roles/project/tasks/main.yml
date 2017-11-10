@@ -6,3 +6,16 @@
     state: present
     description: "{{ project_desc }}"
     kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
+  tags:
+    - deploy
+
+- name: Give admin privileges to developer user
+  oc_adm_policy_user:
+    namespace: "{{ project_name }}"
+    user: developer
+    resource_kind: role
+    resource_name: admin
+    state: present
+    kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
+  tags:
+    - deploy   

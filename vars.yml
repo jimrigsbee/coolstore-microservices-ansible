@@ -8,7 +8,15 @@ password: developer
 # Administrative credentials
 admin_username: system:admin
 admin_password: "''"
-
+# OpenShift namespace for the services
 project_name: coolstore
 # Use local nexus repository
 nexus: true
+# Location of coolstore microservices resources
+git_url: https://github.com/jbossdemocentral/coolstore-microservice
+git_version: 1.1.x
+# Module mirrors
+mvn_mirror: http://nexus.coolstore.svc.cluster.local:8081/content/groups/public/
+# Currently the npm and bower mirrors are not defined in the deployed Nexus server
+#npm_mirror: http://nexus.coolstore.svc.cluster.local:8081/repository/npm/
+#bower_mirror: http://nexus.coolstore.svc.cluster.local:8081/repository/bower-mirror/
