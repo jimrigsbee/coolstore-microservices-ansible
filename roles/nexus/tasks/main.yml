@@ -1,9 +1,22 @@
 ---
-- name: Get Nexus template
-  get_url:
-    url: "https://raw.githubusercontent.com/OpenShiftDemos/nexus/master/nexus2-persistent-template.yaml"
-    dest: "/tmp/nexus2-persistent-template.yaml"
-    mode: 0400
+- name: See if Nexus is already deployed
+  oc_obj:
+    namespace: "{{ project_name }}"
+    kind: "pod"
+    selector: "deploymentconfig=nexus"
+    state: list
+    kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
+  register: nexus_deployed
+  tags:
+    - deploy
+    - undeploy
+
+- set_fact:
+    nexus_is_deployed: "'results' in nexus_deployed.results and nexus_deployed.results.results[0]['items'] | count > 0"
+  tags:
+    - deploy
+    - undeploy
+
 # The oc library is not idempotent - delete resources
 - name: Remove Nexus template
   oc_obj:
@@ -12,14 +25,19 @@
     name: "nexus2-persistent"
     state: absent
     kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
+  when: nexus_is_deployed
+  tags:
+    - undeploy
 
-- name: Remove Nexus deployment
-  oc_obj:
+- name: Terminate Nexus application
+  oc_scale:
     namespace: "{{ project_name }}"
-    kind: "is,dc,rc,route,svc"
-    selector: "app=nexus"
-    state: absent
+    kind: dc
+    name: "nexus"
     kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
+  when: nexus_is_deployed
+  tags:
+    - undeploy
 
 - name: Wait for Nexus undeployment
   oc_obj:
@@ -33,6 +51,35 @@
   - "'results' in nexus_undeploy.results and nexus_undeploy.results.results[0]['items'] | count == 0"
   delay: 5
   retries: 5
+  when: nexus_is_deployed
+  tags:
+    - undeploy
+
+- name: Remove Nexus deployment
+  oc_obj:
+    namespace: "{{ project_name }}"
+    kind: "is,dc,rc,route,svc,pvc"
+    selector: "app=nexus"
+    state: absent
+    kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
+  when: nexus_is_deployed
+  tags:
+    - undeploy
+
+- set_fact:
+    nexus_is_deployed: false
+  tags:
+    - undeploy
+
+# Begin deployment of Nexus
+- name: Get Nexus template
+  get_url:
+    url: "https://raw.githubusercontent.com/OpenShiftDemos/nexus/master/nexus2-persistent-template.yaml"
+    dest: "/tmp/nexus2-persistent-template.yaml"
+    mode: 0400
+  when: not nexus_is_deployed
+  tags:
+    - deploy
 
 - name: Create Nexus template
   oc_obj:
@@ -43,6 +90,9 @@
     kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
     files:
     - "/tmp/nexus2-persistent-template.yaml"
+  when: not nexus_is_deployed
+  tags:
+    - deploy
 
 - name: Deploy Nexus
   oc_process:
@@ -50,19 +100,26 @@
     template_name: "nexus2-persistent"
     create: true
     kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
+  when: not nexus_is_deployed
+  tags:
+    - deploy
 
+# Wait for the endpoint address of the nexus service to become active
 - name: Verify Nexus deployment
   oc_obj:
     namespace: "{{ project_name }}"
-    kind: pod
-    selector: "deploymentconfig=nexus"
+    kind: ep
+    name: "nexus"
     state: list
     kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
+  when: not nexus_is_deployed
   register: nexus_deploy
   until:
-  - "'results' in nexus_deploy.results and nexus_deploy.results.results[0]['items'] | count > 0"
-  - "{{nexus_deploy.results.results[0] | json_query(jp_query) | count == 1}}"
+  - "'results' in nexus_deploy.results and nexus_deploy.results['results'] | count > 0"
+  - "{{nexus_deploy.results.results[0] | json_query(jp_query) | count > 0}}"
   delay: 20
   retries: 6
   vars:
-    jp_query: "items[*].status.conditions[?type=='Ready'&&status=='True']"
+    jp_query: "subsets[*].addresses"
+  tags:
+    - deploy

@@ -7,13 +7,17 @@ Make sure you have the following requirements installed:
 
 - Git
 - Ansible 1.9+
+- Python module "jmespath"
+  - sudo pip install jmespath *or* sudo yum install python-jmespath
+  - This is required for the json_query filter in Ansible
 
 ## Application Installation
 All of the instructions in this section assume that you are using CDK 3.2 (minishift). You may use a remote OpenShift cluster as well.  Adjust IP addresses and ports as needed.
 
-* Login to your openshift environment
+* Login to your openshift environment as the system administrator and create special accounts
 ```
-$ oc login -u developer https://192.168.99.100:8443
+$ oc login -u system:admin
+$ oc create sa pv-recycler-controller -n openshift-infra
 ```
 * Edit the vars.yml file and change any needed parameters
 * Run the appropriate playbook
@@ -28,6 +32,6 @@ Choose from one of the following playbooks:
 |===
 
 ```
-$ ansible-playbook playbooks/msa.yml
+$ ansible-playbook -i hosts playbooks/msa.yml
 ```
 Substitute the desired playbook in the command above.
