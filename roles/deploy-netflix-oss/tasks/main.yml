@@ -1,0 +1,57 @@
+---
+# Determine if build template already exists
+- name: See if oss template already exists
+  oc_obj:
+    namespace: "{{ project_name }}"
+    kind: "dc"
+    name: "turbine-server"
+    state: list
+    kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
+  register: turbine_deployed
+  tags:
+    - deploy
+    - undeploy
+
+- set_fact:
+    turbine_is_deployed: "{{'results' in turbine_deployed.results and 'kind' in turbine_deployed.results.results[0] }}"
+  tags:
+    - deploy
+    - undeploy
+
+# Remove build Configs
+- name: Remove resources for oss stack
+  oc_obj:
+    namespace: "{{ project_name }}"
+    kind: "dc,svc,route,is"
+    selector: "app={{ item }}"
+    state: absent
+    kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
+  when: turbine_is_deployed
+  with_items:
+    - turbine-server
+    - hystrix-dashboard
+  tags:
+    - undeploy
+
+# Process oss stack resources
+- name: Get oss resource definitions
+  get_url:
+    url: "{{ raw_git_url }}/openshift/templates/netflix-oss-list.yaml"
+    dest: "/tmp/netflix.yaml"
+    mode: 0400
+  when: not turbine_is_deployed
+  tags:
+    - deploy
+
+- name: Load deployments template
+  oc_obj:
+    namespace: "{{ project_name }}"
+    kind: dc
+    name: "turbine-server"
+    state: present
+    kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
+    files:
+    - "/tmp/netflix.yaml"
+  when: not turbine_is_deployed
+  tags:
+    - deploy

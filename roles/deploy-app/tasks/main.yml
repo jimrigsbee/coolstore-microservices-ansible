@@ -1,0 +1,108 @@
+---
+# Determine if build template already exists
+- name: See if deployment template already exists
+  oc_obj:
+    namespace: "{{ project_name }}"
+    kind: "template"
+    name: "coolstore-deployments"
+    state: list
+    kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
+  register: apps_deployed
+  tags:
+    - deploy
+    - undeploy
+
+- set_fact:
+    apps_are_deployed: "{{'results' in apps_deployed.results and 'kind' in apps_deployed.results.results[0] }}"
+  tags:
+    - deploy
+    - undeploy
+
+# Remove Build Template
+- name: Remove deployments template
+  oc_obj:
+    namespace: "{{ project_name }}"
+    kind: template
+    name: "coolstore-deployments"
+    state: absent
+    kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
+  when: apps_are_deployed
+  tags:
+    - undeploy
+
+# Remove build Configs
+- name: Remove resources for app label
+  oc_obj:
+    namespace: "{{ project_name }}"
+    kind: "dc,svc,pvc,route,configmap"
+    selector: "app={{ item }}"
+    state: absent
+    kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
+  when: apps_are_deployed
+  with_items:
+    - web-ui
+    - coolstore-gw
+    - inventory
+    - catalog
+    - cart
+    - pricing
+    - rating
+    - review
+  tags:
+    - undeploy
+
+- name: Remove resources for application label
+  oc_obj:
+    namespace: "{{ project_name }}"
+    kind: "dc,svc,pvc,route,configmap"
+    selector: "application={{ item }}"
+    state: absent
+    kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
+  when: apps_are_deployed
+  with_items:
+    - web-ui
+    - coolstore-gw
+    - inventory
+    - catalog
+    - cart
+    - pricing
+    - rating
+    - review
+  tags:
+    - undeploy
+
+# Load build template
+- name: Get deployments template
+  get_url:
+    url: "{{ raw_git_url }}/openshift/templates/coolstore-deployments-template.yaml"
+    dest: "/tmp/deploy-template.yaml"
+    mode: 0400
+  when: not apps_are_deployed
+  tags:
+    - deploy
+
+- name: Load deployments template
+  oc_obj:
+    namespace: "{{ project_name }}"
+    kind: template
+    name: "coolstore-deployments"
+    state: present
+    kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
+    files:
+    - "/tmp/deploy-template.yaml"
+  when: not apps_are_deployed
+  tags:
+    - deploy
+
+- name: Deploy application resources
+  oc_process:
+    namespace: "{{ project_name }}"
+    template_name: "coolstore-deployments"
+    create: true
+    kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
+    params:
+      APP_VERSION: latest
+      HOSTNAME_SUFFIX: "{{ project_name }}.{{ domain }}"
+  when: not apps_are_deployed
+  tags:
+    - deploy

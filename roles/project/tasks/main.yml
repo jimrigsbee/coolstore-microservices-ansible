@@ -18,4 +18,11 @@
     state: present
     kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
   tags:
-    - deploy   
+    - deploy
+
+- name: Give view privileges to default user
+  shell: "oc adm policy add-role-to-user view -z default"
+  register: cmd
+  failed_when: "cmd.rc != 0"
+  tags:
+    - deploy        

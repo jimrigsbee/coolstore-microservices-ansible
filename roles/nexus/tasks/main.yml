@@ -12,7 +12,12 @@
     - undeploy
 
 - set_fact:
-    nexus_is_deployed: "'results' in nexus_deployed.results and nexus_deployed.results.results[0]['items'] | count > 0"
+    nexus_is_deployed: "{{'results' in nexus_deployed.results and nexus_deployed.results.results[0]['items'] | count > 0}}"
+  tags:
+    - deploy
+    - undeploy
+- debug:
+    var: nexus_is_deployed
   tags:
     - deploy
     - undeploy
@@ -49,8 +54,8 @@
   register: nexus_undeploy
   until:
   - "'results' in nexus_undeploy.results and nexus_undeploy.results.results[0]['items'] | count == 0"
-  delay: 5
-  retries: 5
+  delay: 10
+  retries: 6
   when: nexus_is_deployed
   tags:
     - undeploy
@@ -115,7 +120,7 @@
   when: not nexus_is_deployed
   register: nexus_deploy
   until:
-  - "'results' in nexus_deploy.results and nexus_deploy.results['results'] | count > 0"
+  - "{{'results' in nexus_deploy.results and nexus_deploy.results['results'] | count > 0}}"
   - "{{nexus_deploy.results.results[0] | json_query(jp_query) | count > 0}}"
   delay: 20
   retries: 6

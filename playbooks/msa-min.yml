@@ -6,6 +6,8 @@
   pre_tasks:
     - include: setup.yml
   roles:
-    # - { role: project, project_desc: "This project contains the front end and microservices for the CoolStore application.", project_display_name: "CoolStore Microservices" }
-    # - { role: nexus, when: nexus }
+    - { role: project, project_desc: "This project contains the front end and microservices for the CoolStore application.", project_display_name: "CoolStore Microservices" }
+    - { role: nexus, when: nexus }
     - { role: build-images }
+    - { role: deploy-app }
+    - { role: deploy-netflix-oss }

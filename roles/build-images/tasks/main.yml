@@ -161,12 +161,12 @@
     bc_name: "{{ item }}"
   with_items:
     - web-ui
-    # - coolstore-gw
-    # - inventory
-    # - catalog
-    # - cart
-    # - pricing
-    # - rating
-    # - review
+    - coolstore-gw
+    - inventory
+    - catalog
+    - cart
+    - pricing
+    - rating
+    - review
   tags:
     - deploy
