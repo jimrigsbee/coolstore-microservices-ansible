@@ -1,0 +1,172 @@
+---
+# Determine if build template already exists
+- name: See if Build template already exists
+  oc_obj:
+    namespace: "{{ project_name }}"
+    kind: "template"
+    name: "coolstore-builds"
+    state: list
+    kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
+  register: builds_deployed
+  tags:
+    - deploy
+    - undeploy
+
+- set_fact:
+    builds_are_deployed: "{{'results' in builds_deployed.results and 'kind' in builds_deployed.results.results[0] }}"
+  tags:
+    - deploy
+    - undeploy
+
+# Remove Build Template
+- name: Remove Build template
+  oc_obj:
+    namespace: "{{ project_name }}"
+    kind: template
+    name: "coolstore-builds"
+    state: absent
+    kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
+  when: builds_are_deployed
+  tags:
+    - undeploy
+
+# Remove build Configs
+- name: Remove build configs
+  oc_obj:
+    namespace: "{{ project_name }}"
+    kind: bc
+    name: "{{ item }}"
+    state: absent
+    kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
+  when: builds_are_deployed
+  with_items:
+    - web-ui
+    - coolstore-gw
+    - inventory
+    - catalog
+    - cart
+    - pricing
+    - rating
+    - review
+  tags:
+    - undeploy
+
+- name: Remove image streams
+  oc_obj:
+    namespace: "{{ project_name }}"
+    kind: is
+    name: "{{ item }}"
+    state: absent
+    kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
+  when: builds_are_deployed
+  with_items:
+    - web-ui
+    - coolstore-gw
+    - inventory
+    - catalog
+    - cart
+    - pricing
+    - rating
+    - review
+  tags:
+    - undeploy
+
+# Load build template
+- name: Get Builds template
+  get_url:
+    url: "{{ raw_git_url }}/openshift/templates/coolstore-builds-template.yaml"
+    dest: "/tmp/builds-template.yaml"
+    mode: 0400
+  when: not builds_are_deployed
+  tags:
+    - deploy
+
+- name: Load Builds template
+  oc_obj:
+    namespace: "{{ project_name }}"
+    kind: template
+    name: "coolstore-builds"
+    state: present
+    kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
+    files:
+    - "/tmp/builds-template.yaml"
+  when: not builds_are_deployed
+  tags:
+    - deploy
+
+- name: Deploy Build Configs and Image Streams
+  oc_process:
+    namespace: "{{ project_name }}"
+    template_name: "coolstore-builds"
+    create: true
+    kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
+    params:
+      GIT_URI: "{{ source_git_url }}"
+      GIT_REF: "{{ app_version }}"
+      MAVEN_MIRROR_URL: "{{ mvn_mirror }}"
+  when: not builds_are_deployed
+  tags:
+    - deploy
+
+# Verify build configs exist
+- name: Verify build configs
+  oc_obj:
+    namespace: "{{ project_name }}"
+    kind: bc
+    name: "{{ item }}"
+    state: list
+    kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
+  register: bc_list
+  failed_when: "{{'results' in bc_list.results and 'stderr' in bc_list.results.results[0] }}"
+  with_items:
+    - web-ui
+    - coolstore-gw
+    - inventory
+    - catalog
+    - cart
+    - pricing
+    - rating
+    - review
+  tags:
+    - deploy
+
+# Verify build configs exist
+- name: Verify image streams
+  oc_obj:
+    namespace: "{{ project_name }}"
+    kind: is
+    name: "{{ item }}"
+    state: list
+    kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
+  register: is_list
+  failed_when: "{{'results' in is_list.results and 'stderr' in is_list.results.results[0] }}"
+  with_items:
+    - web-ui
+    - coolstore-gw
+    - inventory
+    - catalog
+    - cart
+    - pricing
+    - rating
+    - review
+  tags:
+    - deploy
+
+# Do builds and wait for each to finish
+- name: Builds microservices
+  include_role:
+    name: build-images
+    tasks_from: build
+  vars:
+    bc_name: "{{ item }}"
+  with_items:
+    - web-ui
+    # - coolstore-gw
+    # - inventory
+    # - catalog
+    # - cart
+    # - pricing
+    # - rating
+    # - review
+  tags:
+    - deploy

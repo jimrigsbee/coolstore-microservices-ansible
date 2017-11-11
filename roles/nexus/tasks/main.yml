@@ -17,7 +17,7 @@
     - deploy
     - undeploy
 
-# The oc library is not idempotent - delete resources
+# Remove and Undeploy Nexus
 - name: Remove Nexus template
   oc_obj:
     namespace: "{{ project_name }}"
@@ -81,7 +81,7 @@
   tags:
     - deploy
 
-- name: Create Nexus template
+- name: Load Nexus template
   oc_obj:
     namespace: "{{ project_name }}"
     kind: template
