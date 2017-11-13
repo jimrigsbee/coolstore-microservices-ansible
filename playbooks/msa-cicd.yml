@@ -1,0 +1,15 @@
+---
+- hosts: localhost
+  become: no
+  vars_files:
+  - ../vars.yml
+  pre_tasks:
+    - include: setup.yml
+  roles:
+    - { role: project, project_desc: "This project contains the front end and microservices for the CoolStore application.",
+          project_display_name: "CoolStore Microservices", cicd: true, test_env: true }
+    - { role: nexus, when: nexus }
+    - { role: jenkins }
+    - { role: build-images }
+    - { role: deploy-netflix-oss }
+    - { role: deploy-app, scale: false }

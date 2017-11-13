@@ -1,0 +1,59 @@
+---
+- name: See if Jenkins is already deployed
+  oc_obj:
+    namespace: "{{ project_name }}-ci"
+    kind: "dc"
+    name: "jenkins"
+    state: list
+    kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
+  register: jenkins_deployed
+  tags:
+    - deploy
+    - undeploy
+
+- set_fact:
+    jenkins_is_deployed: "{{'results' in jenkins_deployed.results and 'kind' in jenkins_deployed.results.results[0] }}"
+  tags:
+    - deploy
+    - undeploy
+
+# Remove jenkins
+- name: Remove jenkins resources
+  oc_obj:
+    namespace: "{{ project_name}}-ci"
+    kind: "dc,route,svc,sa"
+    selector: "app=jenkins"
+    state: absent
+    kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
+  when: jenkins_is_deployed
+  tags:
+    - undeploy
+
+# Deploy jenkins
+- name: Deploy jenkins
+  shell: "oc new-app jenkins-ephemeral -l app=jenkins -p MEMORY_LIMIT=1Gi -n {{ project_name}}-ci"
+  register: deploy_cmd
+  failed_when: "deploy_cmd.rc != 0"
+  when: not jenkins_is_deployed
+  tags:
+    - deploy
+
+# Wait for the endpoint address of the jenkins service to become active
+- name: Verify Jenkins deployment
+  oc_obj:
+    namespace: "{{ project_name }}-ci"
+    kind: ep
+    name: "jenkins"
+    state: list
+    kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
+  when: not jenkins_is_deployed
+  register: jenkins_deploy
+  until:
+  - "{{'results' in jenkins_deploy.results and jenkins_deploy.results['results'] | count > 0}}"
+  - "{{jenkins_deploy.results.results[0] | json_query(jp_query) | count > 0}}"
+  delay: 20
+  retries: 6
+  vars:
+    jp_query: "subsets[*].addresses"
+  tags:
+    - deploy

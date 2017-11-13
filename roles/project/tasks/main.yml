@@ -25,4 +25,60 @@
   register: cmd
   failed_when: "cmd.rc != 0"
   tags:
-    - deploy        
+    - deploy
+
+- name: Create CoolStore CI/CD OpenShift project
+  oc_project:
+    display_name: "CoolStore CI/CD"
+    name: "{{ project_name }}-ci"
+    state: present
+    description: "Project for CI/CD components"
+    kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
+  when: cicd
+  tags:
+    - deploy
+
+- name: Give admin privileges to developer user for cicd
+  oc_adm_policy_user:
+    namespace: "{{ project_name }}-ci"
+    user: developer
+    resource_kind: role
+    resource_name: admin
+    state: present
+    kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
+  when: cicd
+  tags:
+    - deploy
+    
+- name: Create CoolStore Inventory Dev OpenShift project
+  oc_project:
+    display_name: "CoolStore Inventory Dev"
+    name: "{{ project_name }}-inv-dev"
+    state: present
+    description: "Project for development version of inventory service"
+    kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
+  when: cicd and test_env
+  tags:
+    - deploy
+
+- name: Create CoolStore Dev OpenShift project
+  oc_project:
+    display_name: "CoolStore Dev"
+    name: "{{ project_name }}-dev"
+    state: present
+    description: "Project for development version of coolstore application"
+    kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
+  when: cicd and test_env
+  tags:
+    - deploy
+
+- name: Create CoolStore QA OpenShift project
+  oc_project:
+    display_name: "CoolStore QA"
+    name: "{{ project_name }}-qa"
+    state: present
+    description: "Project for QA version of coolstore application"
+    kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
+  when: cicd and test_env
+  tags:
+    - deploy
