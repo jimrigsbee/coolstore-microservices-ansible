@@ -106,3 +106,46 @@
   when: not apps_are_deployed
   tags:
     - deploy
+
+# Scale down requested resources
+- name: Collect deployments to scale down
+  oc_obj:
+    namespace: "{{ project_name }}"
+    kind: dc
+    selector: "{{ scale_selector }}"
+    state: list
+    kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
+  register: scaled
+  when: scale
+  tags:
+    - deploy
+
+- set_fact:
+    scaled_dc_list: "{{ 'results' in scaled.results and scaled.results.results[0] | json_query('items[*].metadata.name') }}"
+  when: scale
+  tags:
+    - deploy
+
+- name: Cancel unwanted deployments
+  shell: "oc rollout cancel dc/{{ item }} -n {{ project_name }}"
+  with_items: "{{ scaled_dc_list }}"
+  register: rollout_cmd
+  failed_when: "rollout_cmd.rc != 0"
+  when: scale
+  tags:
+    - deploy
+
+- name: Scale unwanted deployments to zero
+  oc_scale:
+    namespace: "{{ project_name }}"
+    kind: dc
+    name: "{{ item }}"
+    state: present
+    kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
+    replicas: 0
+  register: scale_cmd
+  with_items: "{{ scaled_dc_list }}"
+  failed_when: "{{ scale_cmd.result[0] != 0 }}"
+  when: scale
+  tags:
+    - deploy

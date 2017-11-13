@@ -10,4 +10,4 @@
     - { role: nexus, when: nexus }
     - { role: build-images }
     - { role: deploy-netflix-oss }
-    - { role: deploy-app, scale: true, scale_selector: "comp-required!=true,app!=nexus" }
+    - { role: deploy-app, scale: false }
