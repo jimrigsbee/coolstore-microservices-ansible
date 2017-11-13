@@ -71,6 +71,17 @@
   tags:
     - undeploy
 
+- name: Remove pricing resources
+  oc_obj:
+    namespace: "{{ project_name }}"
+    kind: "dc"
+    name: "pricing"
+    state: absent
+    kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
+  when: apps_are_deployed
+  tags:
+    - undeploy
+
 # Load build template
 - name: Get deployments template
   get_url:
@@ -116,13 +127,11 @@
     state: list
     kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
   register: scaled
-  when: scale
   tags:
     - deploy
 
 - set_fact:
     scaled_dc_list: "{{ 'results' in scaled.results and scaled.results.results[0] | json_query('items[*].metadata.name') }}"
-  when: scale
   tags:
     - deploy
 

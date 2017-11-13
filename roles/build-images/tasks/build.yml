@@ -23,7 +23,7 @@
   delay: 15
   retries: "{{ (build_wait_time_seconds | int / 15) | int }}"
   vars:
-    jp_query: "items[?status.phase!='Complete'] | length(@)"
-  ignore_errors: yes  
+    jp_query: "items[?status.phase!='Complete'&&status.phase!='Failed'] | length(@)"
+  ignore_errors: yes
   tags:
     - deploy

@@ -16,11 +16,6 @@
   tags:
     - deploy
     - undeploy
-- debug:
-    var: nexus_is_deployed
-  tags:
-    - deploy
-    - undeploy
 
 # Remove and Undeploy Nexus
 - name: Remove Nexus template
