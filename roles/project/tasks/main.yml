@@ -49,7 +49,7 @@
   when: cicd
   tags:
     - deploy
-    
+
 - name: Create CoolStore Inventory Dev OpenShift project
   oc_project:
     display_name: "CoolStore Inventory Dev"
@@ -61,16 +61,28 @@
   tags:
     - deploy
 
-- name: Create CoolStore Dev OpenShift project
-  oc_project:
-    display_name: "CoolStore Dev"
-    name: "{{ project_name }}-dev"
+- name: Give admin privileges to developer user for cicd dev
+  oc_adm_policy_user:
+    namespace: "{{ project_name }}-inv-dev"
+    user: developer
+    resource_kind: role
+    resource_name: admin
     state: present
-    description: "Project for development version of coolstore application"
     kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
   when: cicd and test_env
   tags:
     - deploy
+
+# - name: Create CoolStore Dev OpenShift project
+#   oc_project:
+#     display_name: "CoolStore Dev"
+#     name: "{{ project_name }}-dev"
+#     state: present
+#     description: "Project for development version of coolstore application"
+#     kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
+#   when: cicd and test_env
+#   tags:
+#     - deploy
 
 - name: Create CoolStore QA OpenShift project
   oc_project:
@@ -78,6 +90,54 @@
     name: "{{ project_name }}-qa"
     state: present
     description: "Project for QA version of coolstore application"
+    kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
+  when: cicd and test_env
+  tags:
+    - deploy
+
+- name: Give admin privileges to developer user for cicd qa
+  oc_adm_policy_user:
+    namespace: "{{ project_name }}-qa"
+    user: developer
+    resource_kind: role
+    resource_name: admin
+    state: present
+    kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
+  when: cicd and test_env
+  tags:
+    - deploy
+
+- name: Give admin privileges to jenkins
+  oc_adm_policy_group:
+    namespace: "{{ project_name }}"
+    group: "system:serviceaccounts:coolstore-ci"
+    resource_kind: role
+    resource_name: admin
+    state: present
+    kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
+  when: cicd
+  tags:
+    - deploy
+
+- name: Give admin privileges to jenkins
+  oc_adm_policy_group:
+    namespace: "{{ project_name }}-inv-dev"
+    group: "system:serviceaccounts:coolstore-ci"
+    resource_kind: role
+    resource_name: admin
+    state: present
+    kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
+  when: cicd
+  tags:
+    - deploy
+
+- name: Give admin privileges to jenkins
+  oc_adm_policy_group:
+    namespace: "{{ project_name }}-qa"
+    group: "system:serviceaccounts:coolstore-ci"
+    resource_kind: role
+    resource_name: admin
+    state: present
     kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
   when: cicd and test_env
   tags:

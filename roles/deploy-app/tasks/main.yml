@@ -18,7 +18,7 @@
     - deploy
     - undeploy
 
-# Remove Build Template
+# Remove Deployments  Template
 - name: Remove deployments template
   oc_obj:
     namespace: "{{ project_name }}"
@@ -30,7 +30,7 @@
   tags:
     - undeploy
 
-# Remove build Configs
+# Remove deployed resources
 - name: Remove resources for app label
   oc_obj:
     namespace: "{{ project_name }}"
@@ -82,7 +82,7 @@
   tags:
     - undeploy
 
-# Load build template
+# Load deployment template
 - name: Get deployments template
   get_url:
     url: "{{ raw_git_url }}/openshift/templates/coolstore-deployments-template.yaml"

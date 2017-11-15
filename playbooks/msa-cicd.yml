@@ -13,3 +13,5 @@
     - { role: build-images }
     - { role: deploy-netflix-oss }
     - { role: deploy-app, scale: false }
+    - { role: deploy-pipeline, template_name: "inventory-pipeline", pipeline_name: "inventory-pipeline",
+          template_filename: "inventory-pipeline-template.yaml", test_env: true }

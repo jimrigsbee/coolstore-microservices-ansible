@@ -1,0 +1,97 @@
+---
+# Determine if build template already exists
+- name: See if pipeline template already exists
+  oc_obj:
+    namespace: "{{ project_name }}-ci"
+    kind: "template"
+    name: "{{ template_name }}"
+    state: list
+    kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
+  register: pipeline_deployed
+  tags:
+    - deploy
+    - undeploy
+
+- set_fact:
+    pipeline_is_deployed: "{{'results' in pipeline_deployed.results and 'kind' in pipeline_deployed.results.results[0] }}"
+  tags:
+    - deploy
+    - undeploy
+
+# Remove Pipeline Template
+- name: Remove pipeline template
+  oc_obj:
+    namespace: "{{ project_name }}-ci"
+    kind: template
+    name: "{{ template_name }}"
+    state: absent
+    kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
+  when: pipeline_is_deployed
+  tags:
+    - undeploy
+
+# Remove pipeline build config
+- name: Remove pipeline build config
+  oc_obj:
+    namespace: "{{ project_name }}-ci"
+    kind: bc
+    name: "{{ pipeline_name }}"
+    state: absent
+    kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
+  when: pipeline_is_deployed
+  tags:
+    - undeploy
+
+# Load pipeline template
+- name: Get pipeline template
+  get_url:
+    url: "{{ raw_git_url }}/openshift/templates/{{ template_filename }}"
+    dest: "/tmp/pipeline-template.yaml"
+    mode: 0400
+  when: not pipeline_is_deployed
+  tags:
+    - deploy
+
+- name: Load pipeline template
+  oc_obj:
+    namespace: "{{ project_name }}-ci"
+    kind: template
+    name: "{{ template_name }}"
+    state: present
+    kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
+    files:
+    - "/tmp/pipeline-template.yaml"
+  when: not pipeline_is_deployed
+  tags:
+    - deploy
+
+- name: Deploy pipeline build config (with QA)
+  oc_process:
+    namespace: "{{ project_name }}-ci"
+    template_name: "{{ template_name }}"
+    create: true
+    kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
+    params:
+      PIPELINE_NAME: "{{ pipeline_name }}"
+      DEV_PROJECT: "{{ project_name }}-inv-dev"
+      TEST_PROJECT: "{{ project_name }}-qa"
+      PROD_PROJECT: "{{ project_name }}"
+      GENERIC_WEBHOOK_SECRET: "{{ webhook_secret }}"
+  when: not pipeline_is_deployed and test_env
+  tags:
+    - deploy
+
+- name: Deploy pipeline build config (without QA)
+  oc_process:
+    namespace: "{{ project_name }}-ci"
+    template_name: "{{ template_name }}"
+    create: true
+    kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
+    params:
+      PIPELINE_NAME: "{{ pipeline_name }}"
+      DEV_PROJECT: "{{ project_name }}-inv-dev"
+      PROD_PROJECT: "{{ project_name }}"
+      GENERIC_WEBHOOK_SECRET: "{{ webhook_secret }}"
+  when: not pipeline_is_deployed and not test_env
+  tags:
+    - deploy

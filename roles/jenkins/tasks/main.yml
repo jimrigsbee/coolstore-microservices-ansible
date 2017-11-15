@@ -21,7 +21,7 @@
 - name: Remove jenkins resources
   oc_obj:
     namespace: "{{ project_name}}-ci"
-    kind: "dc,route,svc,sa"
+    kind: "dc,route,svc,sa,rolebinding"
     selector: "app=jenkins"
     state: absent
     kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"

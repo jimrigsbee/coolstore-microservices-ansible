@@ -8,7 +8,7 @@ password: developer
 # Administrative credentials
 admin_username: system:admin
 admin_password: "''"
-# OpenShift namespace for the services
+# OpenShift namespace for the services and prefix for cicd and other namespaces
 project_name: coolstore
 # Use local nexus repository
 nexus: true
@@ -21,3 +21,5 @@ mvn_mirror: http://nexus.coolstore.svc.cluster.local:8081/content/groups/public/
 #npm_mirror: http://nexus.coolstore.svc.cluster.local:8081/repository/npm/
 #bower_mirror: http://nexus.coolstore.svc.cluster.local:8081/repository/bower-mirror/
 build_wait_time_seconds: 900
+#CI/CD parameters
+webhook_secret: UfW7gQ6Jx4
