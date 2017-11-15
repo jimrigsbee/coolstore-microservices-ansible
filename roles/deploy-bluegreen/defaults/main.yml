@@ -1,0 +1,2 @@
+---
+raw_git_url: "https://raw.githubusercontent.com/{{github_user}}/coolstore-microservice/{{app_version}}/"

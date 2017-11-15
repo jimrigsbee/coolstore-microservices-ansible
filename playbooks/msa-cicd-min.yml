@@ -8,10 +8,12 @@
   roles:
     - { role: project, project_desc: "This project contains the front end and microservices for the CoolStore application.",
           project_display_name: "CoolStore Microservices", cicd: true, test_env: true }
-    # - { role: nexus, when: nexus }
-    # - { role: jenkins }
-    # - { role: build-images }
-    # - { role: deploy-netflix-oss }
-    # - { role: deploy-app, scale: true, scale_selector: "comp-required!=true,app!=nexus" }
-    # - { role: deploy-pipeline, template_name: "inventory-pipeline", pipeline_name: "inventory-pipeline",
-    #       template_filename: "inventory-pipeline-template-simple.yaml", test_env: false }
+    - { role: nexus, when: nexus }
+    - { role: jenkins }
+    - { role: build-images }
+    - { role: deploy-netflix-oss }
+    - { role: deploy-app, scale: true, scale_selector: "comp-required!=true,app!=nexus" }
+    - { role: deploy-service, app_name: "inventory", project_suffix: "inv-dev", template_name: "inventory", template_filename: "inventory-template.json" }
+    - { role: deploy-bluegreen, template_filename: "inventory-bluegreen-template.yaml", template_name: "inventory-bluegreen" }
+    - { role: deploy-pipeline, template_name: "inventory-pipeline", pipeline_name: "inventory-pipeline",
+          template_filename: "inventory-pipeline-template-simple.yaml", test_env: false }

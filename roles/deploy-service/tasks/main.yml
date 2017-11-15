@@ -1,0 +1,92 @@
+---
+# Determine if build config already exists
+- name: See if buildconfig already exists
+  oc_obj:
+    namespace: "{{ project_name }}-{{ project_suffix }}"
+    kind: bc
+    name: "{{ app_name }}"
+    state: list
+    kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
+  register: app_deployed
+  tags:
+    - deploy
+    - undeploy
+
+- set_fact:
+    app_is_deployed: "{{'results' in app_deployed.results and 'kind' in app_deployed.results.results[0] }}"
+  tags:
+    - deploy
+    - undeploy
+
+# Remove Deployments  Template
+- name: Remove deployments template
+  oc_obj:
+    namespace: "{{ project_name }}-{{ project_suffix}}"
+    kind: template
+    name: "{{ template_name }}"
+    state: absent
+    kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
+  when: app_is_deployed
+  tags:
+    - undeploy
+
+# Remove deployed resources for app
+- name: Remove resources for app
+  oc_obj:
+    namespace: "{{ project_name }}-{{ project_suffix }}"
+    kind: "is,bc,dc,svc,route"
+    name: "{{ app_name }}"
+    state: absent
+    kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
+  when: app_is_deployed
+  tags:
+    - undeploy
+
+- name: Remove database resources for app
+  oc_obj:
+    namespace: "{{ project_name }}-{{ project_suffix }}"
+    kind: "dc,svc"
+    name: "{{ app_name }}-postgresql"
+    state: absent
+    kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
+  when: app_is_deployed
+  tags:
+    - undeploy
+
+# Load deployment template
+- name: Get deployments template
+  get_url:
+    url: "{{ raw_git_url }}/openshift/templates/{{ template_filename }}"
+    dest: "/tmp/{{ app_name }}-template.yaml"
+    mode: 0400
+  when: not app_is_deployed
+  tags:
+    - deploy
+
+- name: Load deployments template
+  oc_obj:
+    namespace: "{{ project_name }}-{{ project_suffix }}"
+    kind: template
+    name: "{{ template_name }}"
+    state: present
+    kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
+    files:
+    - "/tmp/{{ app_name }}-template.yaml"
+  when: not app_is_deployed
+  tags:
+    - deploy
+
+- name: Deploy application resources
+  oc_process:
+    namespace: "{{ project_name }}-{{ project_suffix }}"
+    template_name: "{{ template_name }}"
+    create: true
+    kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
+    params:
+      GIT_URI: "{{ source_git_url }}"
+      GIT_REF: "{{ app_version }}"
+      MAVEN_MIRROR_URL: "{{ mvn_mirror }}"
+      APPLICATION_NAME: "{{ app_name }}"
+  when: not app_is_deployed
+  tags:
+    - deploy

@@ -73,17 +73,6 @@
   tags:
     - deploy
 
-# - name: Create CoolStore Dev OpenShift project
-#   oc_project:
-#     display_name: "CoolStore Dev"
-#     name: "{{ project_name }}-dev"
-#     state: present
-#     description: "Project for development version of coolstore application"
-#     kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
-#   when: cicd and test_env
-#   tags:
-#     - deploy
-
 - name: Create CoolStore QA OpenShift project
   oc_project:
     display_name: "CoolStore QA"
