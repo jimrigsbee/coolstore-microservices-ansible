@@ -20,6 +20,10 @@ $ oc login -u system:admin
 $ oc create sa pv-recycler-controller -n openshift-infra
 ```
 * Edit the vars.yml file and change any needed parameters
+* Download the OpenShift Ansible library into this repo
+```
+git clone https://github.com/openshift/openshift-ansible.git
+```
 * Run the appropriate playbook
 
 Choose from one of the following playbooks:

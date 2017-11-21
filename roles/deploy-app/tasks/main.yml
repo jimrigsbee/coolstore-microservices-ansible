@@ -127,11 +127,13 @@
     state: list
     kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
   register: scaled
+  when: scale
   tags:
     - deploy
 
 - set_fact:
     scaled_dc_list: "{{ 'results' in scaled.results and scaled.results.results[0] | json_query('items[*].metadata.name') }}"
+  when: scale  
   tags:
     - deploy
 

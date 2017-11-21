@@ -3,10 +3,3 @@
   fail:
     msg: "OpenShift host is not defined. Please edit vars.yml"
   when: (openshift is undefined)
-
-- name: Checkout OpenShift Ansible source code from Github
-  git:
-    repo: "https://github.com/openshift/openshift-ansible"
-    dest: "../openshift-ansible"
-    update: yes
-    version: "release-{{ openshift_version }}"
