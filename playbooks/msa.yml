@@ -7,6 +7,7 @@
     - include: setup.yml
   roles:
     - { role: project, project_desc: "This project contains the front end and microservices for the CoolStore application.", project_display_name: "CoolStore Microservices" }
+    - { role: persistent-volumes, when: create_volumes }    
     - { role: nexus, when: nexus }
     - { role: build-images }
     - { role: deploy-netflix-oss }

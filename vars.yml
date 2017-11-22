@@ -1,13 +1,13 @@
 ---
-openshift: 192.168.99.100:8443
+openshift: master.lab.example.com:443
 openshift_version: 3.6
-domain: 192.168.99.100.nip.io
+domain: apps.lab.example.com
 # Your OpenShift credentials
 username: developer
 password: developer
 # Administrative credentials
-admin_username: system:admin
-admin_password: "''"
+admin_username: admin
+admin_password: redhat
 # OpenShift namespace for the services and prefix for cicd and other namespaces
 project_name: coolstore
 # Use local nexus repository
@@ -23,3 +23,4 @@ mvn_mirror: http://nexus.coolstore.svc.cluster.local:8081/content/groups/public/
 build_wait_time_seconds: 900
 #CI/CD parameters
 webhook_secret: UfW7gQ6Jx4
+create_volumes: true

@@ -1,0 +1,59 @@
+---
+# Determine if persistent volumes exist
+- name: See if persistent volumes already exist
+  oc_obj:
+    namespace: default
+    kind: pv
+    name: "coolstore-pv001"
+    state: list
+    kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
+  register: pv_deployed
+  tags:
+    - deploy
+    - undeploy
+
+- set_fact:
+    pv_is_deployed: "{{'results' in pv_deployed.results and 'kind' in pv_deployed.results.results[0] }}"
+  tags:
+    - deploy
+    - undeploy
+
+# Remove persistent volumes
+- name: Remove persistent volumes
+  oc_obj:
+    namespace: default
+    kind: pv
+    name: "{{ item }}"
+    state: absent
+    kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
+  with_items:
+    - coolstore-pv001
+    - coolstore-pv002
+    - coolstore-pv003
+    - coolstore-pv004
+    - coolstore-pv005
+  when: pv_is_deployed
+  tags:
+    - undeploy
+
+# Create persistent volumes
+- name: Get persistent volume resource file
+  copy:
+    src: pv.yml
+    dest: /tmp/pv.yml
+  when: not pv_is_deployed
+  tags:
+     - deploy
+
+- name: Create persistent volumes
+  oc_obj:
+    namespace: default
+    kind: pv
+    name: "coolstore-pv001"
+    state: present
+    kubeconfig: "{{ lookup('env','HOME')}}/.kube/config"
+    files:
+    - "/tmp/pv.yml"
+  when: not pv_is_deployed
+  tags:
+    - deploy
